@@ -2,25 +2,21 @@
 
 set -e
 
-echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║     VPS INSPECTOR PROFESSIONAL - ONE CLICK INSTALLER        ║"
-echo "╚══════════════════════════════════════════════════════════════╝"
-echo ""
-
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+echo "╔══════════════════════════════════════════════════════════════╗"
+echo "║     VPS INSPECTOR PROFESSIONAL - ONE CLICK INSTALLER        ║"
+echo "╚══════════════════════════════════════════════════════════════╝"
+echo ""
+
 check_os() {
     echo -e "${BLUE}🔍 Checking operating system...${NC}"
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         echo -e "${GREEN}✓ Linux detected${NC}"
-        if [[ -f /etc/os-release ]]; then
-            . /etc/os-release
-            echo -e "  Distribution: $NAME $VERSION"
-        fi
     else
         echo -e "${RED}✗ This tool only supports Linux${NC}"
         exit 1
@@ -29,31 +25,35 @@ check_os() {
 
 check_rust() {
     echo -e "${BLUE}🦀 Checking Rust installation...${NC}"
-    if command -v rustc &> /dev/null; then
-        RUST_VERSION=$(rustc --version | cut -d' ' -f2)
-        echo -e "${GREEN}✓ Rust found: $RUST_VERSION${NC}"
-    else
+    if ! command -v rustc &> /dev/null; then
         echo -e "${YELLOW}⚠️ Rust not found. Installing...${NC}"
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
         source "$HOME/.cargo/env"
-        echo -e "${GREEN}✓ Rust installed successfully${NC}"
     fi
+    
+    if ! rustup default stable &> /dev/null; then
+        echo -e "${YELLOW}⚠️ Setting default toolchain...${NC}"
+        rustup default stable
+    fi
+    
+    RUST_VERSION=$(rustc --version | cut -d' ' -f2)
+    echo -e "${GREEN}✓ Rust ready: $RUST_VERSION${NC}"
 }
 
 check_dependencies() {
     echo -e "${BLUE}📦 Checking system dependencies...${NC}"
     
     if command -v apt &> /dev/null; then
-        sudo apt update
-        sudo apt install -y build-essential pkg-config libssl-dev git curl wget
+        sudo apt update -qq
+        sudo apt install -y build-essential pkg-config libssl-dev git curl wget ca-certificates
     elif command -v yum &> /dev/null; then
         sudo yum groupinstall -y "Development Tools"
-        sudo yum install -y openssl-devel git curl wget
+        sudo yum install -y openssl-devel git curl wget ca-certificates
     elif command -v dnf &> /dev/null; then
         sudo dnf groupinstall -y "Development Tools"
-        sudo dnf install -y openssl-devel git curl wget
+        sudo dnf install -y openssl-devel git curl wget ca-certificates
     elif command -v pacman &> /dev/null; then
-        sudo pacman -S --noconfirm base-devel openssl git curl wget
+        sudo pacman -S --noconfirm base-devel openssl git curl wget ca-certificates
     else
         echo -e "${RED}✗ Unsupported package manager${NC}"
         exit 1
@@ -63,18 +63,19 @@ check_dependencies() {
 }
 
 clone_repo() {
-    echo -e "${BLUE}📥 Cloning repository...${NC}"
+    echo -e "${BLUE}📥 Preparing repository...${NC}"
     
-    if [[ -d "vps-inspec" ]]; then
-        echo -e "${YELLOW}⚠️ Directory exists. Updating...${NC}"
-        cd vps-inspec
-        git pull
-    else
+    if [[ ! -d "vps-inspec" ]]; then
         git clone https://github.com/akaanakbaik/vps-inspec.git
-        cd vps-inspec
     fi
     
-    echo -e "${GREEN}✓ Repository ready${NC}"
+    cd vps-inspec
+    
+    if [[ -f "Cargo.lock" ]]; then
+        rm -f Cargo.lock
+    fi
+    
+    echo -e "${GREEN}✓ Repository ready at $(pwd)${NC}"
 }
 
 build_project() {
@@ -96,24 +97,17 @@ install_binary() {
     sudo cp target/release/vps-inspec /usr/local/bin/
     sudo chmod +x /usr/local/bin/vps-inspec
     
-    if command -v vps-inspec &> /dev/null; then
-        echo -e "${GREEN}✓ Binary installed to /usr/local/bin/vps-inspec${NC}"
-    else
-        echo -e "${RED}✗ Installation failed${NC}"
-        exit 1
-    fi
+    echo -e "${GREEN}✓ Binary installed to /usr/local/bin/vps-inspec${NC}"
 }
 
 verify_installation() {
     echo -e "${BLUE}✅ Verifying installation...${NC}"
     
-    VERSION=$(vps-inspec --version 2>/dev/null || echo "Unknown")
-    echo -e "${GREEN}✓ VPS Inspector Professional $VERSION${NC}"
-    
-    if vps-inspec --help &> /dev/null; then
-        echo -e "${GREEN}✓ Help menu accessible${NC}"
+    if command -v vps-inspec &> /dev/null; then
+        echo -e "${GREEN}✓ VPS Inspector Professional is ready${NC}"
     else
-        echo -e "${YELLOW}⚠️ Help menu check skipped${NC}"
+        echo -e "${RED}✗ Installation verification failed${NC}"
+        exit 1
     fi
 }
 
@@ -128,15 +122,11 @@ show_completion() {
     echo "Quick start:"
     echo "  $ vps-inspec"
     echo ""
-    echo "For help:"
-    echo "  $ vps-inspec --help"
+    echo "Or run directly from project folder:"
+    echo "  $ cd ~/vps-inspec && cargo run --release"
     echo ""
     echo "To update later:"
-    echo "  $ vps-inspec --update"
-    echo "  or"
     echo "  $ cd ~/vps-inspec && git pull && cargo build --release && sudo cp target/release/vps-inspec /usr/local/bin/"
-    echo ""
-    echo -e "${BLUE}Website: https://github.com/akaanakbaik/vps-inspec${NC}"
     echo ""
 }
 
