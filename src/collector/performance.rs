@@ -186,9 +186,9 @@ impl PerformanceCollector {
             .and_then(|o| String::from_utf8(o.stdout).ok())
             .and_then(|s| {
                 let re = regex::Regex::new(r"%iowait:\s+([\d\.]+)").unwrap();
-                re.captures(&s).and_then(|cap| cap.get(1))
+                re.captures(&s)
+                    .and_then(|cap| cap.get(1).map(|m| m.as_str().to_string()))
             })
-            .map(|m| m.as_str().to_string())
             .unwrap_or_else(|| "0".to_string());
 
         let iowait_pct = iowait.parse::<f64>().unwrap_or(0.0);

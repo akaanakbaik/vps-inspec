@@ -59,8 +59,11 @@ impl HardwareCollector {
                     .output()
                     .ok()
                     .and_then(|o| String::from_utf8(o.stdout).ok())
-                    .and_then(|s| s.lines().find(|l| l.contains("Model name")).and_then(|l| l.split(':').nth(1)))
-                    .map(|s| s.trim().to_string())
+                    .and_then(|s| {
+                        s.lines()
+                            .find(|l| l.contains("Model name"))
+                            .and_then(|l| l.split(':').nth(1).map(|v| v.trim().to_string()))
+                    })
                     .unwrap_or_else(|| "Unknown".to_string())
             });
 
@@ -108,8 +111,11 @@ impl HardwareCollector {
             .output()
             .ok()
             .and_then(|o| String::from_utf8(o.stdout).ok())
-            .and_then(|s| s.lines().find(|l| l.contains("Thread(s) per core")).and_then(|l| l.split(':').nth(1)))
-            .map(|s| s.trim().to_string())
+            .and_then(|s| {
+                s.lines()
+                    .find(|l| l.contains("Thread(s) per core"))
+                    .and_then(|l| l.split(':').nth(1).map(|v| v.trim().to_string()))
+            })
             .unwrap_or_else(|| "1".to_string());
 
         MetricValue {
@@ -169,12 +175,13 @@ impl HardwareCollector {
             .output()
             .ok()
             .and_then(|o| String::from_utf8(o.stdout).ok())
-            .and_then(|s| s.lines().find(|l| l.contains("%Cpu(s)")))
+            .and_then(|s| s.lines().find(|l| l.contains("%Cpu(s)")).map(|l| l.to_string()))
             .and_then(|line| {
                 let re = regex::Regex::new(r"id,\s*([\d\.]+)").ok()?;
-                re.captures(line).and_then(|cap| cap.get(1))
+                re.captures(&line)
+                    .and_then(|cap| cap.get(1).map(|m| m.as_str().to_string()))
             })
-            .and_then(|m| m.as_str().parse::<f64>().ok())
+            .and_then(|m| m.parse::<f64>().ok())
             .map(|idle| 100.0 - idle)
             .unwrap_or(0.0);
 

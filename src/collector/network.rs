@@ -91,11 +91,17 @@ impl NetworkCollector {
             }
         }
 
-        let value = format!(
-            "Public IPs: {}\nPrivate IPs: {}",
-            if public_ips.is_empty() { "none" } else { &public_ips.join(", ") },
-            if private_ips.is_empty() { "none" } else { &private_ips.join(", ") }
-        );
+        let public = if public_ips.is_empty() {
+            "none".to_string()
+        } else {
+            public_ips.join(", ")
+        };
+        let private = if private_ips.is_empty() {
+            "none".to_string()
+        } else {
+            private_ips.join(", ")
+        };
+        let value = format!("Public IPs: {}\nPrivate IPs: {}", public, private);
 
         MetricValue {
             name: "ip_addresses".to_string(),
@@ -133,12 +139,12 @@ impl NetworkCollector {
     fn get_interface_speeds(&self) -> MetricValue {
         let mut speeds = Vec::new();
 
-        for entry in fs::read_dir("/sys/class/net/").unwrap_or_default() {
-            if let Ok(entry) = entry {
+        if let Ok(entries) = fs::read_dir("/sys/class/net/") {
+            for entry in entries.flatten() {
                 let iface = entry.file_name();
                 let iface_str = iface.to_string_lossy();
                 let speed_path = format!("/sys/class/net/{}/speed", iface_str);
-                
+
                 if let Ok(speed) = fs::read_to_string(&speed_path) {
                     let speed_val = speed.trim();
                     if let Ok(speed_mbps) = speed_val.parse::<u32>() {
@@ -174,11 +180,17 @@ impl NetworkCollector {
             .map(|l| l.replace("search", "").trim().to_string())
             .collect();
 
-        let value = format!(
-            "DNS Servers: {}\nSearch Domains: {}",
-            if dns_servers.is_empty() { "default" } else { &dns_servers.join(", ") },
-            if search_domains.is_empty() { "none" } else { &search_domains.join(", ") }
-        );
+        let dns = if dns_servers.is_empty() {
+            "default".to_string()
+        } else {
+            dns_servers.join(", ")
+        };
+        let search = if search_domains.is_empty() {
+            "none".to_string()
+        } else {
+            search_domains.join(", ")
+        };
+        let value = format!("DNS Servers: {}\nSearch Domains: {}", dns, search);
 
         MetricValue {
             name: "dns_configuration".to_string(),
@@ -286,8 +298,7 @@ impl NetworkCollector {
             .output()
             .ok()
             .and_then(|o| String::from_utf8(o.stdout).ok())
-            .and_then(|s| s.split_whitespace().nth(2))
-            .map(|s| s.to_string());
+            .and_then(|s| s.split_whitespace().nth(2).map(|v| v.to_string()));
 
         let rtt = if let Some(gateway) = default_gw {
             let ping = Command::new("ping")
@@ -327,9 +338,9 @@ impl NetworkCollector {
             .and_then(|o| String::from_utf8(o.stdout).ok())
             .and_then(|s| {
                 let re = Regex::new(r"(\d+)% packet loss").unwrap();
-                re.captures(&s).and_then(|cap| cap.get(1))
+                re.captures(&s)
+                    .and_then(|cap| cap.get(1).map(|m| m.as_str().to_string()))
             })
-            .map(|m| m.as_str().to_string())
             .unwrap_or_else(|| "100".to_string());
 
         let loss_pct = loss.parse::<u8>().unwrap_or(100);
@@ -385,7 +396,13 @@ impl NetworkCollector {
             .output()
             .ok()
             .and_then(|o| String::from_utf8(o.stdout).ok())
-            .map(|s| if s.contains("active") { "UFW: ACTIVE" } else { "UFW: INACTIVE" });
+            .map(|s| {
+                if s.contains("active") {
+                    "UFW: ACTIVE".to_string()
+                } else {
+                    "UFW: INACTIVE".to_string()
+                }
+            });
 
         let iptables_rules = Command::new("iptables")
             .args(["-L", "-n"])

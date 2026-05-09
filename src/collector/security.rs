@@ -434,7 +434,7 @@ impl SecurityCollector {
             .output()
             .ok()
             .and_then(|o| String::from_utf8(o.stdout).ok())
-            .unwrap_or_else(|_| "Disabled".to_string())
+            .unwrap_or_else(|| "Disabled".to_string())
             .trim()
             .to_string();
 

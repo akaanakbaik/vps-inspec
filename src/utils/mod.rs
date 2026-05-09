@@ -2,23 +2,16 @@ use std::process::Command;
 use std::time::Duration;
 use std::thread;
 
-pub fn run_command_with_timeout(cmd: &str, args: &[&str], timeout_secs: u64) -> Option<String> {
-    let handle = thread::spawn(move || {
-        Command::new(cmd)
-            .args(args)
-            .output()
-            .ok()
-            .and_then(|o| String::from_utf8(o.stdout).ok())
-    });
-    
-    match handle.join() {
-        Ok(Some(output)) => Some(output),
-        _ => None,
-    }
+pub fn run_command_with_timeout(cmd: &str, args: &[&str], _timeout_secs: u64) -> Option<String> {
+    Command::new(cmd)
+        .args(args)
+        .output()
+        .ok()
+        .and_then(|o| String::from_utf8(o.stdout).ok())
 }
 
 pub fn parse_bash_variable(content: &str, var_name: &str) -> Option<String> {
-    let pattern = format!(r"{}\s*=\s*['\"]?([^'\"]+)['\"]?", var_name);
+    let pattern = format!(r#"{}\s*=\s*['"]?([^'"]+)['"]?"#, var_name);
     let re = regex::Regex::new(&pattern).ok()?;
     re.captures(content).and_then(|cap| cap.get(1)).map(|m| m.as_str().to_string())
 }
