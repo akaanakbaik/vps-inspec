@@ -4,10 +4,9 @@ use std::io::Write;
 use docx_rs::*;
 use chrono::Local;
 use crate::collector::CompleteReport;
-use crate::translator;
 use crate::report::ReportGenerator;
 
-pub async fn create_document(output_dir: &PathBuf, report: &CompleteReport, lang: &str) {
+pub async fn create_document(output_dir: &PathBuf, report: &CompleteReport, lang: &str) -> PathBuf {
     let timestamp = Local::now().format("%Y%m%d_%H%M%S").to_string();
     let output_path = output_dir.join(format!("report_{}.docx", timestamp));
     
@@ -130,6 +129,8 @@ pub async fn create_document(output_dir: &PathBuf, report: &CompleteReport, lang
     doc = doc.add_paragraph(Paragraph::new().add_run(Run::new().add_text("https://github.com/akaanakbaik/vps-inspec").italic().size(14)));
     
     let bytes = doc.build().unwrap();
-    let mut file = File::create(output_path).unwrap();
+    let mut file = File::create(&output_path).unwrap();
     file.write_all(&bytes).unwrap();
+    
+    output_path
 }
