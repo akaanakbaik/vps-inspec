@@ -8,7 +8,13 @@ use crate::collector::CompleteReport;
 
 pub async fn create_document(output_dir: &PathBuf, report: &CompleteReport, _lang: &str) -> PathBuf {
     let output_path = output_dir.join("report.docx");
-    let mut file = File::create(&output_path).unwrap();
+    let mut file = match File::create(&output_path) {
+        Ok(f) => f,
+        Err(e) => {
+            eprintln!("Failed to create DOCX report file {}: {}", output_path.display(), e);
+            return output_path;
+        }
+    };
 
     let mut content = String::new();
     content.push_str("VPS INSPECTOR PROFESSIONAL REPORT\n");
@@ -43,6 +49,8 @@ pub async fn create_document(output_dir: &PathBuf, report: &CompleteReport, _lan
         content.push('\n');
     }
 
-    let _ = file.write_all(content.as_bytes());
+    if let Err(e) = file.write_all(content.as_bytes()) {
+        eprintln!("Failed to write DOCX report file {}: {}", output_path.display(), e);
+    }
     output_path
 }

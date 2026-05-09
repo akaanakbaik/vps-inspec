@@ -2,8 +2,7 @@ use std::process::Command;
 use std::time::Duration;
 use std::thread;
 
-pub fn run_command_with_timeout(cmd: &str, args: &[&str], timeout_secs: u64) -> Option<String> {
-    let _ = timeout_secs;
+pub fn run_command_with_timeout(cmd: &str, args: &[&str], _timeout_secs: u64) -> Option<String> {
     Command::new(cmd)
         .args(args)
         .output()
