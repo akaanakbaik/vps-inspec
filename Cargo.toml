@@ -9,10 +9,6 @@ license = "MIT"
 keywords = ["vps", "diagnostic", "monitoring", "security", "ai"]
 categories = ["command-line-utilities", "system-tools"]
 
-[lib]
-name = "vps_inspec"
-path = "src/lib.rs"
-
 [[bin]]
 name = "vps-inspec"
 path = "src/main.rs"
@@ -40,7 +36,6 @@ async-trait = "0.1"
 docx-rs = "0.4.20"
 printpdf = "0.6"
 image = "0.24"
-plotters = "0.3"
 anyhow = "1.0"
 thiserror = "1.0"
 backoff = { version = "0.4", features = ["tokio"] }

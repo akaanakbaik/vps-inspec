@@ -18,7 +18,7 @@ pub fn run_command_with_timeout(cmd: &str, args: &[&str], timeout_secs: u64) -> 
 }
 
 pub fn parse_bash_variable(content: &str, var_name: &str) -> Option<String> {
-    let pattern = format!(r"{}\s*=\s*['\"]?([^'\"]+)['\"]?", var_name);
+    let pattern = format!(r#"{}\s*=\s*['"]?([^'"]+)['"]?"#, var_name);
     let re = regex::Regex::new(&pattern).ok()?;
     re.captures(content).and_then(|cap| cap.get(1)).map(|m| m.as_str().to_string())
 }
