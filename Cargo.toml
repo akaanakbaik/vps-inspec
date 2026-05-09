@@ -37,13 +37,12 @@ chrono = { version = "0.4", features = ["serde"] }
 tokio = { version = "1.35", features = ["full"] }
 reqwest = { version = "0.11", features = ["json", "stream"] }
 async-trait = "0.1"
-docx-rs = "0.5"
+docx-rs = "0.4.20"
 printpdf = "0.6"
 image = "0.24"
 plotters = "0.3"
 anyhow = "1.0"
 thiserror = "1.0"
-openai-api = "0.6"
 backoff = { version = "0.4", features = ["tokio"] }
 walkdir = "2.4"
 hostname = "0.3"
