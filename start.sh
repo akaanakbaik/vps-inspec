@@ -57,7 +57,13 @@ check_os() {
 
 check_rust() {
     if ! command -v cargo &>/dev/null; then
-        warn "Rust/Cargo not found. Installing via rustup..."
+        warn "Rust/Cargo not found."
+        echo -e "${YELLOW}   This will run the official rustup installer from https://sh.rustup.rs${NC}"
+        read -r -p "   Proceed with Rust installation? [y/N] " yn
+        case "$yn" in
+            [Yy]*) ;;
+            *) error "Rust is required. Install it manually from https://rustup.rs and re-run start.sh." ;;
+        esac
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --quiet
         # shellcheck source=/dev/null
         source "$HOME/.cargo/env"
@@ -74,6 +80,7 @@ check_deps() {
 
     if [[ ${#missing[@]} -gt 0 ]]; then
         warn "Missing system packages: ${missing[*]}"
+        info "Installing missing packages — sudo privileges required."
         if command -v apt-get &>/dev/null; then
             sudo apt-get update -qq && sudo apt-get install -y build-essential pkg-config libssl-dev git curl
         elif command -v dnf &>/dev/null; then
@@ -92,7 +99,7 @@ check_deps() {
 # ── Core Actions ─────────────────────────────────────────────
 build_binary() {
     step "Building ${BINARY_NAME} (release mode)..."
-    if cargo build --release --bin "${BINARY_NAME}" 2>&1; then
+    if cargo build --release --bin "${BINARY_NAME}"; then
         success "Build complete → ${RELEASE_DIR}/${BINARY_NAME}"
     else
         error "Build failed. Check the output above for details."
@@ -101,7 +108,7 @@ build_binary() {
 
 do_update() {
     step "Pulling latest changes from origin..."
-    if git pull --ff-only origin "$(git rev-parse --abbrev-ref HEAD)" 2>&1; then
+    if git pull --ff-only origin "$(git rev-parse --abbrev-ref HEAD)"; then
         success "Repository updated"
     else
         warn "git pull failed — you may have local changes. Continuing with current code."

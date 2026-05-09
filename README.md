@@ -32,7 +32,7 @@
 
 ### Opsi 1 — `start.sh` (Direkomendasikan)
 
-> Cara paling mudah. Script mendeteksi otomatis apakah binary sudah ada, dan membangunnya jika belum.
+> Cara paling mudah. Script akan mendeteksi secara otomatis apakah binary sudah ada, dan membangunnya jika belum.
 
 ```bash
 git clone https://github.com/akaanakbaik/vps-inspec.git
