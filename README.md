@@ -1,99 +1,154 @@
-# 🚀 VPS Inspector Professional
+<div align="center">
 
-[![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-linux-lightgrey.svg)](https://www.linux.org)
-[![GitHub release](https://img.shields.io/github/v/release/akaanakbaik/vps-inspec)](https://github.com/akaanakbaik/vps-inspec/releases)
+# 🔍 VPS Inspector Professional
 
-**VPS Inspector Professional** adalah tools diagnostik VPS berbasis Rust dengan laporan profesional (DOCX/PDF), analisis multi-kategori, dan integrasi AI.
+**Diagnostik VPS komprehensif berbasis Rust — laporan DOCX/PDF, analisis AI, bilingual.**
 
-## ✨ Highlights
+[![Rust](https://img.shields.io/badge/Rust-1.70%2B-orange?logo=rust&logoColor=white)](https://www.rust-lang.org)
+[![License](https://img.shields.io/github/license/akaanakbaik/vps-inspec?color=blue)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/akaanakbaik/vps-inspec?logo=github)](https://github.com/akaanakbaik/vps-inspec/releases)
+[![Stars](https://img.shields.io/github/stars/akaanakbaik/vps-inspec?style=social)](https://github.com/akaanakbaik/vps-inspec/stargazers)
+[![Last Commit](https://img.shields.io/github/last-commit/akaanakbaik/vps-inspec?color=brightgreen)](https://github.com/akaanakbaik/vps-inspec/commits)
+[![Platform](https://img.shields.io/badge/Platform-Linux-lightgrey?logo=linux&logoColor=white)](https://www.linux.org)
+[![Code Size](https://img.shields.io/github/languages/code-size/akaanakbaik/vps-inspec)](https://github.com/akaanakbaik/vps-inspec)
 
-- 🔍 Scan menyeluruh: sistem, hardware, storage, network, security, performance, software, logs
-- 📄 Output laporan profesional: **DOCX** dan **PDF**
-- 🌐 Dukungan bahasa: **English** dan **Indonesia**
-- 🤖 AI-assisted diagnostics untuk rekomendasi dan analisis lanjutan
-- 🧭 Interactive CLI yang ramah untuk operator/server admin
+</div>
 
-## 📦 Prasyarat
+---
 
-- Linux (direkomendasikan Ubuntu/Debian)
-- Rust toolchain (stable)
-- Paket build dasar
+## ✨ Fitur Utama
+
+| Kategori | Deskripsi |
+|---|---|
+| 🔍 **Scan Menyeluruh** | Sistem, hardware, storage, network, security, performance, software, logs |
+| 📄 **Laporan Profesional** | Export ke **DOCX** dan **PDF** secara otomatis |
+| 🌐 **Bilingual** | Antarmuka interaktif dalam **English** dan **Indonesia** |
+| 🤖 **AI Diagnostics** | Rekomendasi & analisis lanjutan via NVIDIA NIM |
+| ⚡ **Performa Tinggi** | Dibangun dengan Rust — cepat, ringan, zero-overhead |
+
+---
+
+## 🚀 Quick Start
+
+### Opsi 1 — `start.sh` (Direkomendasikan)
+
+> Cara paling mudah. Script mendeteksi otomatis apakah binary sudah ada, dan membangunnya jika belum.
+
+```bash
+git clone https://github.com/akaanakbaik/vps-inspec.git
+cd vps-inspec
+bash start.sh
+```
+
+#### Opsi `start.sh`
+
+| Perintah | Deskripsi |
+|---|---|
+| `bash start.sh` | Jalankan langsung (auto-build jika belum ada binary) |
+| `bash start.sh --update` | Pull update terbaru → rebuild → jalankan |
+| `bash start.sh --build` | Hanya build ulang tanpa langsung menjalankan |
+| `bash start.sh --help` | Tampilkan panduan penggunaan |
+
+---
+
+### Opsi 2 — One-Click Install (install ke sistem)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/akaanakbaik/vps-inspec/main/install.sh | bash
+```
+
+Setelah install selesai, jalankan dari mana saja:
+
+```bash
+vps-inspec
+```
+
+---
+
+### Opsi 3 — Manual (dari source)
+
+**Prasyarat:**
 
 ```bash
 # Install Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source ~/.cargo/env
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh && source ~/.cargo/env
 
-# Ubuntu/Debian dependencies
-sudo apt update
-sudo apt install -y build-essential pkg-config libssl-dev
+# Dependensi sistem (Ubuntu/Debian)
+sudo apt update && sudo apt install -y build-essential pkg-config libssl-dev git
 ```
 
-## ⚙️ Instalasi
+**Build & jalankan:**
 
 ```bash
 git clone https://github.com/akaanakbaik/vps-inspec.git
 cd vps-inspec
 cargo build --release
-sudo cp target/release/vps-inspec /usr/local/bin/
+./target/release/vps-inspec
 ```
 
-## ▶️ Menjalankan
-
-```bash
-# Jalankan binary yang sudah di-install
-vps-inspec
-
-# Atau langsung dari source
-cargo run --release
-```
-
-> Saat ini alur utama berjalan dalam mode interaktif (pemilihan bahasa, konfirmasi scan, dan format output laporan).
+---
 
 ## 🔄 Update
 
-Project menyediakan updater binary terpisah:
-
 ```bash
-# Build updater
-cargo build --release --bin vps-inspec-update
+# Via start.sh (termudah)
+bash start.sh --update
 
-# Jalankan updater
-./target/release/vps-inspec-update
+# Atau manual
+cd vps-inspec && git pull && cargo build --release
 ```
 
-## 📁 Output
+---
 
-Setiap eksekusi membuat folder laporan seperti:
+## 📁 Output Laporan
 
-```text
+Setiap sesi scan menghasilkan folder laporan bertanggal:
+
+```
 vps_report_YYYYMMDD_HHMMSS/
 ├── report.docx
 └── report.pdf
 ```
 
-(tergantung format yang dipilih di prompt interaktif)
+Format dipilih secara interaktif saat program berjalan.
 
-## 🧱 Struktur Proyek (ringkas)
+---
 
-```text
-src/
-├── main.rs          # Entry point interactive CLI
-├── preflight/       # Dependency & environment check
-├── collector/       # Kolektor metrik multi-kategori
-├── report/          # Generator DOCX/PDF
-├── translator/      # Dukungan bahasa EN/ID
-└── ai/              # Integrasi AI diagnostics
+## 🧱 Struktur Proyek
+
+```
+vps-inspec/
+├── start.sh             # Smart launcher (entry point utama)
+├── install.sh           # One-click system installer
+├── src/
+│   ├── main.rs          # Entry point CLI interaktif
+│   ├── bin/
+│   │   └── update.rs    # Updater binary
+│   ├── preflight/       # Pengecekan dependensi & environment
+│   ├── collector/       # Kolektor metrik multi-kategori
+│   ├── report/          # Generator DOCX/PDF
+│   ├── translator/      # Dukungan bahasa EN/ID
+│   ├── ai/              # Integrasi AI diagnostics
+│   └── utils/           # Utilitas umum
+└── Cargo.toml
 ```
 
-## 📝 License
+---
 
-MIT License — lihat file [LICENSE](LICENSE).
+## 📝 Lisensi
+
+Dirilis di bawah **MIT License** — lihat file [LICENSE](LICENSE).
+
+---
 
 ## 🙏 Credits
 
-- [NVIDIA NIM](https://build.nvidia.com) (infrastruktur AI untuk analisis/rekomendasi)
-- Rust ecosystem & community
-- Kontributor proyek ini
+- [NVIDIA NIM](https://build.nvidia.com) — infrastruktur AI untuk analisis & rekomendasi
+- [Rust](https://www.rust-lang.org) ecosystem & community
+- Seluruh kontributor proyek ini
+
+---
+
+<div align="center">
+  <sub>Made with ❤️ by <a href="https://github.com/akaanakbaik">akaanakbaik</a></sub>
+</div>
