@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::fs::File;
 use std::io::Read;
-use reqwest::blocking::Client;
+use reqwest::Client;
 use serde_json::Value;
 use crate::collector::CompleteReport;
 
@@ -39,10 +39,11 @@ pub async fn upload_to_cdn(file_path: &PathBuf) -> Option<String> {
         .header("x-expire", "never")
         .multipart(form)
         .send()
+        .await
         .ok()?;
     
     if response.status().is_success() {
-        let json: Value = response.json().ok()?;
+        let json: Value = response.json().await.ok()?;
         let url = json["url"].as_str().unwrap_or("").to_string();
         println!("✅ File uploaded: {}", url);
         Some(url)
@@ -71,7 +72,7 @@ impl ReportGenerator {
 
     pub fn generate_sparkline(&self, values: &[f64]) -> String {
         let chars = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
-        let max_val = values.iter().fold(0.0, |a, &b| a.max(b));
+        let max_val = values.iter().fold(0.0_f64, |a, &b| a.max(b));
         if max_val == 0.0 {
             return "▁▁▁▁▁▁▁▁▁▁".to_string();
         }

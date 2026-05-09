@@ -148,6 +148,7 @@ async fn main() {
     
     scan_pb.inc(10);
     scan_pb.finish_with_message("✓ Scan completed!".green().to_string());
+    let report_data = collector_manager.collect_all().await;
     
     println!("\n{}", "═".repeat(70));
     println!("{}", translator::t("report_generation_title").bold().green());
@@ -171,20 +172,20 @@ async fn main() {
     
     match output_format {
         0 => {
-            report::generate_docx_report(&output_dir, lang).await;
+            report::generate_docx_report(&output_dir, &report_data, lang).await;
             final_pb.inc(100);
             final_pb.finish_with_message(format!("✓ {} report.docx", translator::t("report_generated")));
             println!("{} {}", "📁".cyan(), output_dir.join("report.docx").display());
         }
         1 => {
-            report::generate_pdf_report(&output_dir, lang).await;
+            report::generate_pdf_report(&output_dir, &report_data, lang).await;
             final_pb.inc(100);
             final_pb.finish_with_message(format!("✓ {} report.pdf", translator::t("report_generated")));
             println!("{} {}", "📁".cyan(), output_dir.join("report.pdf").display());
         }
         2 => {
-            report::generate_docx_report(&output_dir, lang).await;
-            report::generate_pdf_report(&output_dir, lang).await;
+            report::generate_docx_report(&output_dir, &report_data, lang).await;
+            report::generate_pdf_report(&output_dir, &report_data, lang).await;
             final_pb.inc(100);
             final_pb.finish_with_message(format!("✓ {} both formats", translator::t("report_generated")));
             println!("{} 📄 {}", "📁".cyan(), output_dir.join("report.docx").display());

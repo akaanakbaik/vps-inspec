@@ -33,7 +33,13 @@ impl SystemCollector {
         metrics.push(self.get_environment());
         metrics.push(self.get_system_type());
         metrics.push(self.get_product_name());
-        metrics.push(self.get_serial_number().unwrap_or_else(|| "N/A".to_string()));
+        metrics.push(MetricValue {
+            name: "serial_number".to_string(),
+            value: self.get_serial_number().unwrap_or_else(|| "N/A".to_string()),
+            unit: "".to_string(),
+            timestamp: Local::now(),
+            severity: MetricSeverity::Info,
+        });
 
         let duration_ms = start.elapsed().as_millis() as u64;
 
@@ -50,7 +56,7 @@ impl SystemCollector {
             .output()
             .ok()
             .and_then(|o| String::from_utf8(o.stdout).ok())
-            .unwrap_or_else(|_| "unknown".to_string())
+            .unwrap_or_else(|| "unknown".to_string())
             .trim()
             .to_string();
 
@@ -99,7 +105,7 @@ impl SystemCollector {
             .output()
             .ok()
             .and_then(|o| String::from_utf8(o.stdout).ok())
-            .unwrap_or_else(|_| "unknown".to_string())
+            .unwrap_or_else(|| "unknown".to_string())
             .trim()
             .to_string();
 
@@ -118,7 +124,7 @@ impl SystemCollector {
             .output()
             .ok()
             .and_then(|o| String::from_utf8(o.stdout).ok())
-            .unwrap_or_else(|_| "unknown".to_string())
+            .unwrap_or_else(|| "unknown".to_string())
             .trim()
             .to_string();
 
@@ -199,7 +205,7 @@ impl SystemCollector {
             .and_then(|o| String::from_utf8(o.stdout).ok());
 
         let boot_time = output
-            .and_then(|s| s.split_whitespace().skip(2).collect::<Vec<_>>().join(" "))
+            .map(|s| s.split_whitespace().skip(2).collect::<Vec<_>>().join(" "))
             .unwrap_or_else(|| "unknown".to_string());
 
         MetricValue {

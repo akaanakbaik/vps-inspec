@@ -147,7 +147,7 @@ impl CollectorManager {
     }
 
     fn calculate_health_score(&self, system: &MetricGroup, hardware: &MetricGroup, storage: &MetricGroup, network: &MetricGroup, security: &MetricGroup, performance: &MetricGroup) -> u8 {
-        let mut score = 100;
+        let mut score: u8 = 100;
 
         let security_warnings = security.metrics.iter()
             .filter(|m| m.severity == MetricSeverity::Warning).count();
@@ -190,7 +190,7 @@ impl CollectorManager {
             score = score.saturating_sub(5);
         }
 
-        score.max(0).min(100)
+        score.min(100)
     }
 }
 

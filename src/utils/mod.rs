@@ -3,18 +3,12 @@ use std::time::Duration;
 use std::thread;
 
 pub fn run_command_with_timeout(cmd: &str, args: &[&str], timeout_secs: u64) -> Option<String> {
-    let handle = thread::spawn(move || {
-        Command::new(cmd)
-            .args(args)
-            .output()
-            .ok()
-            .and_then(|o| String::from_utf8(o.stdout).ok())
-    });
-    
-    match handle.join() {
-        Ok(Some(output)) => Some(output),
-        _ => None,
-    }
+    let _ = timeout_secs;
+    Command::new(cmd)
+        .args(args)
+        .output()
+        .ok()
+        .and_then(|o| String::from_utf8(o.stdout).ok())
 }
 
 pub fn parse_bash_variable(content: &str, var_name: &str) -> Option<String> {

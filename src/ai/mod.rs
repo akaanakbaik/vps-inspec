@@ -230,23 +230,30 @@ impl AIManager {
         
         let url = "https://integrate.api.nvidia.com/v1/chat/completions";
         
-        let response = self.client
+        let response = match self.client
             .post(url)
             .header("Authorization", format!("Bearer {}", self.api_key_nvidia3))
             .header("Content-Type", "application/json")
             .json(&payload)
             .send()
             .await
-            .ok()?;
+        {
+            Ok(r) => r,
+            Err(_) => return vec![],
+        };
         
         if !response.status().is_success() {
             return vec![];
         }
         
-        let json_response: Value = response.json().await.ok()?;
-        let content = json_response["choices"][0]["message"]["content"]
-            .as_str()?
-            .to_string();
+        let json_response: Value = match response.json().await {
+            Ok(v) => v,
+            Err(_) => return vec![],
+        };
+        let content = match json_response["choices"][0]["message"]["content"].as_str() {
+            Some(v) => v.to_string(),
+            None => return vec![],
+        };
         
         content.split(',')
             .map(|s| s.trim().to_string())
