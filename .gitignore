@@ -1,0 +1,43 @@
+# Rust
+/target/
+**/*.rs.bk
+*.pdb
+*.exp
+*.ilk
+*.lib
+*.dll
+*.so
+*.dylib
+
+# Generated files
+*.docx
+*.pdf
+*.json
+vps_report_*/
+reports/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+*.tmp
+
+# Environment
+.env
+.env.local
+
+# Dependencies
+node_modules/
+
+# Build artifacts
+Cargo.lock
