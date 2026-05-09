@@ -33,85 +33,86 @@ pub async fn create_document(output_dir: &PathBuf, report: &CompleteReport, _lan
         }
     };
 
-    let mut y = 285.0f64;
-    let line_height = 6.0f64;
-    let left_margin = 12.0f64;
     let max_chars = 95usize;
+    let mut lines = Vec::<String>::new();
+    lines.push("VPS INSPECTOR PROFESSIONAL REPORT".to_string());
+    lines.push(format!("Generated: {}", Local::now().format("%Y-%m-%d %H:%M:%S")));
+    lines.push(String::new());
+    lines.push(format!("Overall Health Score: {} / 100", report.overall_health_score));
+    lines.push(format!("Total Recommendations: {}", report.recommendation_count));
+    lines.push(String::new());
 
-    let mut write_line = |line: &str| {
-        if y < 15.0 {
-            return;
-        }
-        current_layer.use_text(line, 10.0, Mm(left_margin), Mm(y), &font);
-        y -= line_height;
-    };
-
-    let mut write_wrapped = |text: &str| {
-        for paragraph in text.lines() {
-            if paragraph.is_empty() {
-                write_line("");
-                continue;
-            }
-
-            let mut buf = String::new();
-            for word in paragraph.split_whitespace() {
-                if buf.is_empty() {
-                    buf.push_str(word);
-                } else if buf.len() + 1 + word.len() <= max_chars {
-                    buf.push(' ');
-                    buf.push_str(word);
-                } else {
-                    write_line(&buf);
-                    buf.clear();
-                    buf.push_str(word);
-                }
-            }
-            if !buf.is_empty() {
-                write_line(&buf);
-            }
-        }
-    };
-
-    write_line("VPS INSPECTOR PROFESSIONAL REPORT");
-    write_line(&format!("Generated: {}", Local::now().format("%Y-%m-%d %H:%M:%S")));
-    write_line("");
-    write_line(&format!("Overall Health Score: {} / 100", report.overall_health_score));
-    write_line(&format!("Total Recommendations: {}", report.recommendation_count));
-    write_line("");
-
-    write_line("CRITICAL ISSUES");
+    lines.push("CRITICAL ISSUES".to_string());
     if report.critical_issues.is_empty() {
-        write_line("- None detected");
+        lines.push("- None detected".to_string());
     } else {
         for issue in &report.critical_issues {
-            write_wrapped(&format!("- {}", issue));
+            lines.extend(wrap_text(&format!("- {}", issue), max_chars));
         }
     }
-    write_line("");
+    lines.push(String::new());
 
-    write_line("SYSTEM METRICS");
+    lines.push("SYSTEM METRICS".to_string());
     for metric in &report.system.metrics {
-        write_wrapped(&format!("- {}: {}", metric.name, metric.value));
+        lines.extend(wrap_text(&format!("- {}: {}", metric.name, metric.value), max_chars));
     }
-    write_line("");
+    lines.push(String::new());
 
-    write_line("HARDWARE METRICS");
+    lines.push("HARDWARE METRICS".to_string());
     for metric in &report.hardware.metrics {
-        write_wrapped(&format!("- {}: {} {}", metric.name, metric.value, metric.unit));
+        lines.extend(wrap_text(&format!("- {}: {} {}", metric.name, metric.value, metric.unit), max_chars));
     }
-    write_line("");
+    lines.push(String::new());
 
-    write_line("AI ANALYSIS");
+    lines.push("AI ANALYSIS".to_string());
     if let Some(analysis) = ai_analysis {
-        write_wrapped(analysis);
+        lines.extend(wrap_text(analysis, max_chars));
     } else {
-        write_line("AI analysis is unavailable.");
+        lines.push("AI analysis is unavailable.".to_string());
+    }
+
+    let mut y = 285.0f32;
+    let line_height = 6.0f32;
+    let left_margin = 12.0f32;
+    for line in lines {
+        if y < 15.0 {
+            break;
+        }
+        current_layer.use_text(&line, 10.0, Mm(left_margin), Mm(y), &font);
+        y -= line_height;
     }
 
     if let Err(e) = doc.save(&mut BufWriter::new(file)) {
         eprintln!("Failed to write PDF report file {}: {}", output_path.display(), e);
     }
     output_path
+}
+
+fn wrap_text(text: &str, max_chars: usize) -> Vec<String> {
+    let mut result = Vec::new();
+    for paragraph in text.lines() {
+        if paragraph.is_empty() {
+            result.push(String::new());
+            continue;
+        }
+        let mut buf = String::new();
+        for word in paragraph.split_whitespace() {
+            if buf.is_empty() {
+                buf.push_str(word);
+            } else if buf.len() + 1 + word.len() <= max_chars {
+                buf.push(' ');
+                buf.push_str(word);
+            } else {
+                result.push(buf.clone());
+                buf.clear();
+                buf.push_str(word);
+            }
+        }
+        if !buf.is_empty() {
+            result.push(buf);
+        }
+    }
+    result
 }
 
 #[cfg(test)]
