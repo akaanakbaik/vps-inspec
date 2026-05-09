@@ -1,0 +1,196 @@
+# 🚀 VPS Inspector Professional
+
+[![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-linux-lightgrey.svg)](https://www.linux.org)
+[![GitHub release](https://img.shields.io/github/v/release/akaanakbaik/vps-inspec)](https://github.com/akaanakbaik/vps-inspec/releases)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/akaanakbaik/vps-inspec)
+[![AI Powered](https://img.shields.io/badge/AI-NVIDIA%20NIM-purple.svg)](https://build.nvidia.com)
+[![Documentation](https://img.shields.io/badge/docs-ready-green.svg)](https://github.com/akaanakbaik/vps-inspec/wiki)
+
+**VPS Inspector Professional** adalah tools diagnostik VPS paling komprehensif dengan integrasi AI. Mengumpulkan **150+ metrik** dari 8 kategori, menghasilkan laporan profesional (DOCX/PDF), dan dilengkapi AI untuk error recovery & rekomendasi cerdas.
+
+## 📋 Fitur Utama
+
+| Fitur | Deskripsi |
+|-------|-----------|
+| 🔍 **System Scanner** | Hostname, OS, kernel, uptime, load average, virtualization |
+| 💻 **Hardware Analysis** | CPU model/cores/freq/usage, RAM detail, swap, temperature |
+| 💾 **Storage Inspector** | Disk usage, inodes, I/O stats, filesystem types, large files |
+| 🌐 **Network Diagnostics** | Interfaces, IP addresses, listening ports, DNS, firewall status |
+| 🔒 **Security Audit** | SSH config, failed logins, sudo users, running services, updates |
+| 📊 **Performance Metrics** | Top processes, IO wait, context switches, cache efficiency |
+| 📦 **Software Inventory** | Nginx, Apache, PHP, MySQL, Node.js, Python, Docker, Redis |
+| 📜 **Log Analysis** | Syslog, auth, kernel, nginx, OOM killer, service crashes |
+| 🤖 **AI Integration** | 4 NVIDIA AI models, smart error recovery, recommendations |
+| 📄 **Professional Reports** | DOCX & PDF output with tables, graphs, executive summary |
+
+## 🚀 Quick Start
+
+### Prerequisites
+```bash
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source ~/.cargo/env
+
+# Install system dependencies (Ubuntu/Debian)
+sudo apt update && sudo apt install -y build-essential pkg-config libssl-dev
+
+# For other distros
+# RHEL/CentOS: sudo yum groupinstall "Development Tools"
+# Arch: sudo pacman -S base-devel openssl
+```
+
+Clone & Install
+
+```bash
+git clone https://github.com/akaanakbaik/vps-inspec.git
+cd vps-inspec
+cargo build --release
+sudo cp target/release/vps-inspec /usr/local/bin/
+```
+
+Run
+
+```bash
+vps-inspec
+```
+
+Atau langsung dengan Cargo:
+
+```bash
+cargo run --release
+```
+
+📖 Penggunaan
+
+```bash
+# Interactive mode (recommended)
+vps-inspec
+
+# Direct scan without prompts
+vps-inspec --auto
+
+# Specify output directory
+vps-inspec --output /path/to/report
+
+# English language
+vps-inspec --lang en
+
+# Bahasa Indonesia
+vps-inspec --lang id
+
+# Compare with previous report
+vps-inspec --compare /path/to/previous_report.json
+
+# Generate JSON output for automation
+vps-inspec --output report.json --format json
+```
+
+📊 Contoh Output
+
+Terminal
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║         WELCOME TO VPS INSPECTOR PROFESSIONAL                ║
+║   The Most Comprehensive VPS Diagnostic Tool with AI         ║
+╚══════════════════════════════════════════════════════════════╝
+
+🔧 PREFLIGHT CHECK
+═══════════════════════════════════════════════════════════════
+✓ bash
+✓ cat
+✓ grep
+✓ awk
+✓ systemd-detect-virt
+
+✅ All preflight checks passed!
+
+🚀 Starting comprehensive VPS scan...
+████████████████████████████████████████████████████ 100% ✓
+
+📄 REPORT GENERATION
+═══════════════════════════════════════════════════════════════
+✓ Report generated successfully!
+📁 ./vps_report_20250115_143022/report.docx
+```
+
+Laporan Executive Summary (DOCX/PDF)
+
+· Overall Health Score: 87/100 🟢
+· Critical Issues: 1 (SSH password auth enabled)
+· Warnings: 3
+· AI Recommendations: 4 items
+
+🏗️ Arsitektur
+
+```
+vps-inspec/
+├── src/
+│   ├── main.rs              # Entry point + Interactive CLI
+│   ├── preflight/           # System dependency checker
+│   ├── collector/           # 150+ metrics collectors
+│   │   ├── system.rs        # OS, kernel, uptime
+│   │   ├── hardware.rs      # CPU, RAM, temperature
+│   │   ├── storage.rs       # Disk, I/O, inodes
+│   │   ├── network.rs       # Interfaces, ports, DNS
+│   │   ├── security.rs      # SSH, audit, updates
+│   │   ├── performance.rs   # Processes, limits
+│   │   ├── software.rs      # Version detection
+│   │   └── logs.rs          # Error log analysis
+│   ├── ai/                  # NVIDIA AI integration
+│   ├── report/              # DOCX/PDF generator
+│   └── translator/          # EN/ID language support
+```
+
+🤖 AI Integration
+
+Tools ini menggunakan 4 model NVIDIA AI untuk:
+
+· Smart error recovery - Ketika command gagal, AI menyarankan alternatif
+· Anomaly detection - Deteksi pola tidak normal dari metrik
+· Recommendations - Rekomendasi action item berdasarkan severity
+· Natural language reports - Ringkasan eksekutif dalam Bahasa Indonesia/English
+
+Models:
+
+· z-ai/glm4.7 - General analysis
+· deepseek-ai/deepseek-v3.2 - Reasoning & commands
+· qwen/qwen3.5-397b-a17b - Alternative suggestions
+· moonshotai/kimi-k2-thinking - Deep thinking analysis
+
+🔧 Auto Update
+
+```bash
+# Update to latest version
+vps-inspec --update
+
+# Or manually
+git pull
+cargo build --release
+sudo cp target/release/vps-inspec /usr/local/bin/
+```
+
+📝 License
+
+MIT License - see LICENSE file
+
+🙏 Credits
+
+· NVIDIA NIM for AI infrastructure
+· Rust community for excellent crates
+· All contributors
+
+📞 Support
+
+· GitHub Issues: akaanakbaik/vps-inspec/issues
+· Email: support@vps-inspec.com
+
+---
+
+Made with ❤️ by akaanakbaik
+
+```
+
+---
