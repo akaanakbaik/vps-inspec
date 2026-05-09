@@ -4,11 +4,25 @@ version = "1.0.0"
 edition = "2021"
 authors = ["akaanakbaik"]
 repository = "https://github.com/akaanakbaik/vps-inspec"
-description = "Professional VPS Inspector with AI-powered diagnostics"
+description = "Professional VPS Inspector with AI-powered diagnostics - The Most Comprehensive VPS Diagnostic Tool"
 license = "MIT"
+keywords = ["vps", "diagnostic", "monitoring", "security", "ai"]
+categories = ["command-line-utilities", "system-tools"]
+
+[lib]
+name = "vps_inspec"
+path = "src/lib.rs"
+
+[[bin]]
+name = "vps-inspec"
+path = "src/main.rs"
+
+[[bin]]
+name = "vps-inspec-update"
+path = "src/bin/update.rs"
 
 [dependencies]
-clap = { version = "4.4", features = ["derive"] }
+clap = { version = "4.4", features = ["derive", "cargo"] }
 dialoguer = "0.11"
 indicatif = "0.17"
 colored = "2.0"
@@ -61,3 +75,11 @@ zip = "0.6"
 opt-level = 3
 lto = true
 codegen-units = 1
+strip = true
+
+[profile.dev]
+opt-level = 0
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
