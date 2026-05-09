@@ -1,17 +1,55 @@
 use std::path::PathBuf;
+use std::fs::File;
+use std::io::Read;
+use reqwest::blocking::Client;
+use serde_json::Value;
 use crate::collector::CompleteReport;
 
 pub mod docx;
 pub mod pdf;
 
-pub async fn generate_docx_report(output_dir: &PathBuf, lang: &str) {
-    let report = crate::collector::CollectorManager::new().collect_all().await;
-    docx::create_document(output_dir, &report, lang).await;
+pub async fn generate_docx_report(output_dir: &PathBuf, report: &CompleteReport, lang: &str) {
+    let file_path = docx::create_document(output_dir, report, lang).await;
+    upload_to_cdn(&file_path).await;
 }
 
-pub async fn generate_pdf_report(output_dir: &PathBuf, lang: &str) {
-    let report = crate::collector::CollectorManager::new().collect_all().await;
-    pdf::create_document(output_dir, &report, lang).await;
+pub async fn generate_pdf_report(output_dir: &PathBuf, report: &CompleteReport, lang: &str) {
+    let file_path = pdf::create_document(output_dir, report, lang).await;
+    upload_to_cdn(&file_path).await;
+}
+
+pub async fn upload_to_cdn(file_path: &PathBuf) -> Option<String> {
+    println!("📤 Uploading {} to CDN...", file_path.display());
+    
+    let file_name = file_path.file_name().unwrap().to_string_lossy().to_string();
+    
+    let mut file = File::open(file_path).ok()?;
+    let mut file_content = Vec::new();
+    file.read_to_end(&mut file_content).ok()?;
+    
+    let part = reqwest::multipart::Part::bytes(file_content)
+        .file_name(file_name)
+        .mime_str("application/octet-stream").ok()?;
+    
+    let form = reqwest::multipart::Form::new()
+        .part("file", part);
+    
+    let client = Client::new();
+    let response = client.post("https://api.kabox.my.id/api/upload")
+        .header("x-expire", "never")
+        .multipart(form)
+        .send()
+        .ok()?;
+    
+    if response.status().is_success() {
+        let json: Value = response.json().ok()?;
+        let url = json["url"].as_str().unwrap_or("").to_string();
+        println!("✅ File uploaded: {}", url);
+        Some(url)
+    } else {
+        println!("❌ Upload failed: {}", response.status());
+        None
+    }
 }
 
 pub struct ReportGenerator {
@@ -90,71 +128,5 @@ impl ReportGenerator {
             crate::collector::MetricSeverity::Warning => "⚠️",
             crate::collector::MetricSeverity::Critical => "🔴",
         }
-    }
-
-    pub fn generate_radial_gauge(&self, percent: f64, radius: usize) -> String {
-        let total_blocks = radius * 4;
-        let filled = (percent / 100.0 * total_blocks as f64).round() as usize;
-        let gauge = (0..total_blocks)
-            .map(|i| if i < filled { '◉' } else { '○' })
-            .collect::<String>();
-        
-        let chunks: Vec<String> = gauge.chars()
-            .collect::<Vec<char>>()
-            .chunks(radius)
-            .map(|c| c.iter().collect())
-            .collect();
-        
-        format!("┌{}┐\n│{}│\n│{}│\n│{}│\n└{}┘\n{:.1}%",
-            "─".repeat(radius), chunks[0], chunks[1], chunks[2], "─".repeat(radius), percent)
-    }
-
-    pub fn generate_histogram(&self, data: &[(String, f64)], width: usize) -> String {
-        let max_val = data.iter().map(|(_, v)| *v).fold(0.0, |a, b| a.max(b));
-        if max_val == 0.0 {
-            return "No data available".to_string();
-        }
-        
-        let mut result = String::new();
-        for (label, value) in data {
-            let bar_length = ((value / max_val) * width as f64).round() as usize;
-            let bar = "█".repeat(bar_length);
-            result.push_str(&format!("{:>15} | {:3.1}% {}\n", label, value, bar));
-        }
-        result
-    }
-
-    pub fn generate_table(&self, headers: &[&str], rows: &[Vec<String>], column_widths: &[usize]) -> String {
-        let mut result = String::new();
-        
-        let separator: String = column_widths.iter()
-            .map(|&w| "+".to_string() + &"-".repeat(w))
-            .collect::<String>() + "+";
-        
-        result.push_str(&separator);
-        result.push('\n');
-        
-        result.push('|');
-        for (i, header) in headers.iter().enumerate() {
-            let width = column_widths[i];
-            result.push_str(&format!(" {:width$} |", header, width = width));
-        }
-        result.push('\n');
-        
-        result.push_str(&separator);
-        result.push('\n');
-        
-        for row in rows {
-            result.push('|');
-            for (i, cell) in row.iter().enumerate() {
-                let width = column_widths[i];
-                let truncated = if cell.len() > width { &cell[..width-3] } else { cell.as_str() };
-                result.push_str(&format!(" {:width$} |", truncated, width = width));
-            }
-            result.push('\n');
-        }
-        
-        result.push_str(&separator);
-        result
     }
 }
