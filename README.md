@@ -5,7 +5,7 @@
 [![Platform](https://img.shields.io/badge/platform-linux-lightgrey.svg)](https://www.linux.org)
 [![GitHub release](https://img.shields.io/github/v/release/akaanakbaik/vps-inspec)](https://github.com/akaanakbaik/vps-inspec/releases)
 
-**VPS Inspector Professional** adalah tool diagnostik VPS berbasis Rust dengan laporan profesional (DOCX/PDF), analisis multi-kategori, dan integrasi AI.
+**VPS Inspector Professional** adalah tools diagnostik VPS berbasis Rust dengan laporan profesional (DOCX/PDF), analisis multi-kategori, dan integrasi AI.
 
 ## ✨ Highlights
 
@@ -94,6 +94,6 @@ MIT License — lihat file [LICENSE](LICENSE).
 
 ## 🙏 Credits
 
-- NVIDIA NIM
+- [NVIDIA NIM](https://build.nvidia.com) (infrastruktur AI untuk analisis/rekomendasi)
 - Rust ecosystem & community
 - Kontributor proyek ini
