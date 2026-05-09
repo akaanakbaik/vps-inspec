@@ -1,4 +1,5 @@
 use std::time::Duration;
+use std::env;
 use serde_json::{json, Value};
 use reqwest::Client;
 use tokio::time::timeout;
@@ -16,15 +17,16 @@ impl NvidiaClient {
                 .timeout(Duration::from_secs(90))
                 .build()
                 .unwrap(),
-            api_keys: vec![
-                "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".to_string(),
-                "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".to_string(),
-            ],
+            api_keys: Self::load_api_keys(),
             base_url: "https://integrate.api.nvidia.com/v1".to_string(),
         }
     }
 
     pub async fn chat_completion(&self, model: &str, messages: Vec<(String, String)>, temperature: f64, max_tokens: u32) -> Result<String, String> {
+        if self.api_keys.is_empty() {
+            return Err("No NVIDIA API key configured in environment variables".to_string());
+        }
+
         let api_key = &self.api_keys[0];
         
         let formatted_messages: Vec<Value> = messages.iter()
@@ -73,6 +75,10 @@ impl NvidiaClient {
     }
 
     pub async fn chat_completion_streaming(&self, model: &str, messages: Vec<(String, String)>, temperature: f64, on_chunk: impl Fn(&str) + Send) -> Result<(), String> {
+        if self.api_keys.is_empty() {
+            return Err("No NVIDIA API key configured in environment variables".to_string());
+        }
+
         let api_key = &self.api_keys[0];
         
         let formatted_messages: Vec<Value> = messages.iter()
@@ -217,6 +223,33 @@ impl NvidiaClient {
         ];
         
         self.chat_completion("deepseek-ai/deepseek-v3.2", messages, 0.4, 2048).await
+    }
+
+    fn load_api_keys() -> Vec<String> {
+        let mut keys = Vec::new();
+
+        for env_name in ["NVIDIA_API_KEYS", "NIM_API_KEYS"] {
+            if let Ok(value) = env::var(env_name) {
+                keys.extend(
+                    value
+                        .split(',')
+                        .map(|s| s.trim())
+                        .filter(|s| !s.is_empty())
+                        .map(|s| s.to_string()),
+                );
+            }
+        }
+
+        for env_name in ["NVIDIA_API_KEY", "NIM_API_KEY"] {
+            if let Ok(value) = env::var(env_name) {
+                let v = value.trim();
+                if !v.is_empty() {
+                    keys.push(v.to_string());
+                }
+            }
+        }
+
+        keys
     }
 }
 

@@ -26,6 +26,14 @@
 | 🤖 **AI Diagnostics** | Rekomendasi & analisis lanjutan via NVIDIA NIM |
 | ⚡ **Performa Tinggi** | Dibangun dengan Rust — cepat, ringan, zero-overhead |
 
+> Untuk mengaktifkan AI, set environment variable API key:
+>
+> ```bash
+> export NVIDIA_API_KEY="nvapi-..."
+> # atau multi-key fallback:
+> export NVIDIA_API_KEYS="nvapi-key1,nvapi-key2"
+> ```
+
 ---
 
 ## 🚀 Quick Start
@@ -111,6 +119,7 @@ vps_report_YYYYMMDD_HHMMSS/
 ```
 
 Format dipilih secara interaktif saat program berjalan.
+Jika memilih PDF, tool akan mengunggah file ke CDN dan menampilkan **ASCII box** berisi link download PDF di output akhir.
 
 ---
 

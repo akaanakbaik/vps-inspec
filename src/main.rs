@@ -1,6 +1,4 @@
 use std::process;
-use std::sync::Arc;
-use tokio::sync::Mutex;
 use dialoguer::{Confirm, Select, theme::ColorfulTheme};
 use colored::*;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -149,7 +147,13 @@ async fn main() {
     scan_pb.inc(10);
     scan_pb.finish_with_message("✓ Scan completed!".green().to_string());
     let report_data = collector_manager.collect_all().await;
-    
+
+    println!("\n{}", translator::t("info_ai_processing").cyan());
+    let ai_manager = ai::AIManager::new();
+    let ai_analysis = ai_manager.analyze_with_ai(&report_data, None, lang).await;
+    println!("{}", translator::t("info_ai_response").bold());
+    println!("{}", ai_analysis);
+     
     println!("\n{}", "═".repeat(70));
     println!("{}", translator::t("report_generation_title").bold().green());
     
@@ -169,29 +173,40 @@ async fn main() {
         .unwrap());
     
     final_pb.set_message(translator::t("writing_document"));
+
+    let mut pdf_cdn_url: Option<String> = None;
     
     match output_format {
         0 => {
-            report::generate_docx_report(&output_dir, &report_data, lang).await;
+            let _ = report::generate_docx_report(&output_dir, &report_data, lang).await;
             final_pb.inc(100);
             final_pb.finish_with_message(format!("✓ {} report.docx", translator::t("report_generated")));
             println!("{} {}", "📁".cyan(), output_dir.join("report.docx").display());
         }
         1 => {
-            report::generate_pdf_report(&output_dir, &report_data, lang).await;
+            pdf_cdn_url = report::generate_pdf_report(&output_dir, &report_data, lang, Some(&ai_analysis)).await;
             final_pb.inc(100);
             final_pb.finish_with_message(format!("✓ {} report.pdf", translator::t("report_generated")));
             println!("{} {}", "📁".cyan(), output_dir.join("report.pdf").display());
         }
         2 => {
-            report::generate_docx_report(&output_dir, &report_data, lang).await;
-            report::generate_pdf_report(&output_dir, &report_data, lang).await;
+            let _ = report::generate_docx_report(&output_dir, &report_data, lang).await;
+            pdf_cdn_url = report::generate_pdf_report(&output_dir, &report_data, lang, Some(&ai_analysis)).await;
             final_pb.inc(100);
             final_pb.finish_with_message(format!("✓ {} both formats", translator::t("report_generated")));
             println!("{} 📄 {}", "📁".cyan(), output_dir.join("report.docx").display());
             println!("{} 📑 {}", "📁".cyan(), output_dir.join("report.pdf").display());
         }
         _ => {}
+    }
+
+    if let Some(url) = pdf_cdn_url {
+        let border = "═".repeat(78);
+        println!("\n{}", format!("╔{}╗", border).green());
+        println!("{}", "║                           PDF CDN DOWNLOAD LINK                              ║".green());
+        println!("{}", format!("╠{}╣", border).green());
+        println!("{}", format!("║ {:<76} ║", url).green());
+        println!("{}", format!("╚{}╝", border).green());
     }
     
     println!("\n{}", "╔════════════════════════════════════════════════════════════════════════════╗".green());

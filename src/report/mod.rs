@@ -8,14 +8,14 @@ use crate::collector::CompleteReport;
 pub mod docx;
 pub mod pdf;
 
-pub async fn generate_docx_report(output_dir: &PathBuf, report: &CompleteReport, lang: &str) {
+pub async fn generate_docx_report(output_dir: &PathBuf, report: &CompleteReport, lang: &str) -> Option<String> {
     let file_path = docx::create_document(output_dir, report, lang).await;
-    upload_to_cdn(&file_path).await;
+    upload_to_cdn(&file_path).await
 }
 
-pub async fn generate_pdf_report(output_dir: &PathBuf, report: &CompleteReport, lang: &str) {
-    let file_path = pdf::create_document(output_dir, report, lang).await;
-    upload_to_cdn(&file_path).await;
+pub async fn generate_pdf_report(output_dir: &PathBuf, report: &CompleteReport, lang: &str, ai_analysis: Option<&str>) -> Option<String> {
+    let file_path = pdf::create_document(output_dir, report, lang, ai_analysis).await;
+    upload_to_cdn(&file_path).await
 }
 
 pub async fn upload_to_cdn(file_path: &PathBuf) -> Option<String> {
@@ -26,10 +26,16 @@ pub async fn upload_to_cdn(file_path: &PathBuf) -> Option<String> {
     let mut file = File::open(file_path).ok()?;
     let mut file_content = Vec::new();
     file.read_to_end(&mut file_content).ok()?;
+
+    let mime_type = match file_path.extension().and_then(|e| e.to_str()).unwrap_or("").to_ascii_lowercase().as_str() {
+        "pdf" => "application/pdf",
+        "docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        _ => "application/octet-stream",
+    };
     
     let part = reqwest::multipart::Part::bytes(file_content)
         .file_name(file_name)
-        .mime_str("application/octet-stream").ok()?;
+        .mime_str(mime_type).ok()?;
     
     let form = reqwest::multipart::Form::new()
         .part("file", part);

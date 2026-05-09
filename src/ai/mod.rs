@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::env;
 use tokio::sync::Mutex;
 use serde_json::{json, Value};
 use reqwest::Client;
@@ -7,10 +8,7 @@ use crate::translator;
 
 pub struct AIManager {
     client: Client,
-    api_key_nvidia1: String,
-    api_key_nvidia2: String,
-    api_key_nvidia3: String,
-    api_key_nvidia4: String,
+    api_keys: Vec<String>,
     current_model_index: Arc<Mutex<usize>>,
 }
 
@@ -21,27 +19,29 @@ impl AIManager {
                 .timeout(std::time::Duration::from_secs(120))
                 .build()
                 .unwrap(),
-            api_key_nvidia1: "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".to_string(),
-            api_key_nvidia2: "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".to_string(),
-            api_key_nvidia3: "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".to_string(),
-            api_key_nvidia4: "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".to_string(),
+            api_keys: Self::load_api_keys(),
             current_model_index: Arc::new(Mutex::new(0)),
         }
     }
 
     pub async fn analyze_with_ai(&self, report: &CompleteReport, error_context: Option<&str>, lang: &str) -> String {
         let models = vec![
-            ("z-ai/glm4.7", &self.api_key_nvidia1),
-            ("deepseek-ai/deepseek-v3.2", &self.api_key_nvidia2),
-            ("qwen/qwen3.5-397b-a17b", &self.api_key_nvidia3),
-            ("moonshotai/kimi-k2-thinking", &self.api_key_nvidia4),
+            "z-ai/glm4.7",
+            "deepseek-ai/deepseek-v3.2",
+            "qwen/qwen3.5-397b-a17b",
+            "moonshotai/kimi-k2-thinking",
         ];
+
+        if self.api_keys.is_empty() {
+            return self.local_fallback_analysis(report, lang);
+        }
         
         let mut idx = *self.current_model_index.lock().await;
         let mut last_error = None;
         
         for _ in 0..models.len() {
-            let (model, api_key) = models[idx];
+            let model = models[idx];
+            let api_key = &self.api_keys[idx % self.api_keys.len()];
             match self.call_nvidia_api(model, api_key, report, error_context, lang).await {
                 Ok(result) => {
                     let mut lock = self.current_model_index.lock().await;
@@ -55,7 +55,8 @@ impl AIManager {
             }
         }
         
-        format!("{} {}", translator::t("error_ai_timeout"), last_error.unwrap_or_default())
+        let fallback = self.local_fallback_analysis(report, lang);
+        format!("{}\n{}\n{}", translator::t("error_ai_timeout"), last_error.unwrap_or_default(), fallback)
     }
 
     async fn call_nvidia_api(&self, model: &str, api_key: &str, report: &CompleteReport, error_context: Option<&str>, lang: &str) -> Result<String, String> {
@@ -66,16 +67,16 @@ impl AIManager {
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are a VPS system expert and DevOps engineer. Analyze the VPS data and provide: 1) Critical issues summary, 2) Performance bottlenecks, 3) Security vulnerabilities, 4) Specific actionable recommendations. Be concise but thorough. Return ONLY the analysis text."
+                    "content": "You are a senior Linux SRE and security engineer. Return plain text only with this strict structure: 1) HEALTH SUMMARY, 2) CRITICAL ISSUES, 3) SECURITY RISKS, 4) PERFORMANCE RISKS, 5) TOP PRIORITY ACTIONS (numbered). Keep it concrete and command-oriented."
                 },
                 {
                     "role": "user",
                     "content": prompt
                 }
             ],
-            "temperature": 0.7,
-            "top_p": 0.95,
-            "max_tokens": 4096,
+            "temperature": 0.4,
+            "top_p": 0.9,
+            "max_tokens": 1200,
             "stream": false
         });
         
@@ -157,12 +158,16 @@ impl AIManager {
             prompt.push_str("\nBerikan analisis dalam Bahasa Indonesia.");
         }
         
-        prompt.push_str("\n\nProvide structured analysis with numbered recommendations. Prioritize by severity.");
+        prompt.push_str("\n\nOutput requirements: prioritize by severity, no markdown table, concise actionable steps.");
         
         prompt
     }
 
     pub async fn get_remediation_command(&self, error_log: &str, system_context: &str) -> Option<String> {
+        if self.api_keys.is_empty() {
+            return None;
+        }
+
         let prompt = format!(
             "SYSTEM CONTEXT: {}\n\nERROR LOG (raw):\n{}\n\nBased on this error log, provide EXACTLY ONE bash command that would fix this issue. \nRules:\n1. Return ONLY the command, no explanation\n2. Must be safe to run\n3. Use standard Linux utilities\n4. If cannot determine, return: echo 'FIX_NOT_FOUND'\n\nCommand:",
             system_context,
@@ -190,7 +195,7 @@ impl AIManager {
         
         let response = self.client
             .post(url)
-            .header("Authorization", format!("Bearer {}", self.api_key_nvidia2))
+            .header("Authorization", format!("Bearer {}", self.api_keys[0]))
             .header("Content-Type", "application/json")
             .json(&payload)
             .send()
@@ -215,6 +220,10 @@ impl AIManager {
     }
 
     pub async fn suggest_alternative_commands(&self, failed_command: &str, error_output: &str) -> Vec<String> {
+        if self.api_keys.is_empty() {
+            return vec![];
+        }
+
         let prompt = format!(
             "Failed command: {}\nError output: {}\n\nSuggest 3 alternative ways to achieve the same goal. Return as comma-separated list of commands.",
             failed_command,
@@ -232,7 +241,7 @@ impl AIManager {
         
         let response = match self.client
             .post(url)
-            .header("Authorization", format!("Bearer {}", self.api_key_nvidia3))
+            .header("Authorization", format!("Bearer {}", self.api_keys[0]))
             .header("Content-Type", "application/json")
             .json(&payload)
             .send()
@@ -259,6 +268,73 @@ impl AIManager {
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty())
             .collect()
+    }
+
+    fn load_api_keys() -> Vec<String> {
+        let mut keys = Vec::new();
+
+        for env_name in ["NVIDIA_API_KEYS", "NIM_API_KEYS"] {
+            if let Ok(value) = env::var(env_name) {
+                keys.extend(
+                    value
+                        .split(',')
+                        .map(|s| s.trim())
+                        .filter(|s| !s.is_empty())
+                        .map(|s| s.to_string()),
+                );
+            }
+        }
+
+        for env_name in ["NVIDIA_API_KEY", "NIM_API_KEY"] {
+            if let Ok(value) = env::var(env_name) {
+                let v = value.trim();
+                if !v.is_empty() {
+                    keys.push(v.to_string());
+                }
+            }
+        }
+
+        keys
+    }
+
+    fn local_fallback_analysis(&self, report: &CompleteReport, lang: &str) -> String {
+        let mut lines = Vec::new();
+        let title = if lang == "ID" {
+            "ANALISIS LOKAL (AI fallback)"
+        } else {
+            "LOCAL ANALYSIS (AI fallback)"
+        };
+        lines.push(title.to_string());
+        lines.push(format!(
+            "{}: {}/100",
+            if lang == "ID" { "Skor kesehatan" } else { "Health score" },
+            report.overall_health_score
+        ));
+
+        if report.critical_issues.is_empty() {
+            lines.push(if lang == "ID" {
+                "Tidak ada isu kritis terdeteksi."
+            } else {
+                "No critical issues detected."
+            }.to_string());
+        } else {
+            lines.push(if lang == "ID" {
+                "Isu kritis:"
+            } else {
+                "Critical issues:"
+            }.to_string());
+            for issue in report.critical_issues.iter().take(5) {
+                lines.push(format!("- {}", issue));
+            }
+        }
+
+        lines.push(if lang == "ID" {
+            "Aksi prioritas: amankan SSH, audit firewall, cek partisi kritis, optimalkan beban CPU/RAM."
+        } else {
+            "Priority actions: harden SSH, audit firewall, check critical partitions, optimize CPU/RAM load."
+        }.to_string());
+
+        lines.join("\n")
     }
 }
 

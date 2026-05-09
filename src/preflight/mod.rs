@@ -1,6 +1,7 @@
 use std::process::Command;
 use std::fs;
 use std::path::Path;
+use std::env;
 use colored::*;
 use dialoguer::Confirm;
 
@@ -10,27 +11,34 @@ pub fn run_preflight() -> Result<(), String> {
     
     let required_bins = vec![
         "bash", "cat", "grep", "awk", "sed", "cut", "sort", "uniq",
-        "head", "tail", "wc", "df", "free", "ps", "ss", "ip", "uptime",
+        "head", "tail", "wc", "df", "free", "ps", "uptime",
         "who", "last", "hostname", "uname", "lscpu", "lsblk"
+    ];
+    let alternative_bins = vec![
+        ("ip / ifconfig", vec!["ip", "ifconfig"]),
+        ("ss / netstat", vec!["ss", "netstat"]),
     ];
     
     let mut missing = Vec::new();
     
     for bin in &required_bins {
-        let status = Command::new("which")
-            .arg(bin)
-            .output();
-        
-        match status {
-            Ok(output) if output.status.success() => {
+        if command_exists(bin) {
                 print!("{} ", "✓".green());
                 println!("{}", bin);
-            }
-            _ => {
-                print!("{} ", "✗".red());
-                println!("{} {}", bin, "(missing)".red());
-                missing.push(*bin);
-            }
+        } else {
+            print!("{} ", "✗".red());
+            println!("{} {}", bin, "(missing)".red());
+            missing.push(*bin);
+        }
+    }
+
+    for (label, bins) in &alternative_bins {
+        if bins.iter().any(|bin| command_exists(bin)) {
+            print!("{} ", "✓".green());
+            println!("{}", label);
+        } else {
+            print!("{} ", "✗".yellow());
+            println!("{} {}", label, "(optional, not found)".yellow());
         }
     }
     
@@ -47,10 +55,12 @@ pub fn run_preflight() -> Result<(), String> {
             .interact()
             .unwrap();
         
-        if auto_install {
+        if auto_install && pkg_manager != "unknown" {
             install_dependencies(&missing, &pkg_manager)?;
+        } else if auto_install {
+            println!("{}", "⚠️ Package manager unsupported for auto-install, continuing with degraded mode.".yellow());
         } else {
-            return Err(format!("Missing dependencies: {}", missing.join(", ")));
+            println!("{}", "⚠️ Continuing with degraded mode. Some collectors may be limited.".yellow());
         }
     }
     
@@ -64,16 +74,26 @@ pub fn run_preflight() -> Result<(), String> {
 }
 
 fn detect_package_manager() -> String {
-    if Command::new("apt").arg("--version").output().is_ok() {
+    if command_exists("apt") {
         "apt (Debian/Ubuntu)".to_string()
-    } else if Command::new("yum").arg("--version").output().is_ok() {
+    } else if command_exists("yum") {
         "yum (RHEL/CentOS)".to_string()
-    } else if Command::new("dnf").arg("--version").output().is_ok() {
+    } else if command_exists("dnf") {
         "dnf (Fedora)".to_string()
-    } else if Command::new("pacman").arg("--version").output().is_ok() {
+    } else if command_exists("pacman") {
         "pacman (Arch)".to_string()
-    } else if Command::new("apk").arg("--version").output().is_ok() {
+    } else if command_exists("apk") {
         "apk (Alpine)".to_string()
+    } else if command_exists("zypper") {
+        "zypper (openSUSE/SLES)".to_string()
+    } else if command_exists("xbps-install") {
+        "xbps-install (Void Linux)".to_string()
+    } else if command_exists("emerge") {
+        "emerge (Gentoo)".to_string()
+    } else if command_exists("eopkg") {
+        "eopkg (Solus)".to_string()
+    } else if command_exists("nix-env") {
+        "nix-env (NixOS)".to_string()
     } else {
         "unknown".to_string()
     }
@@ -92,6 +112,16 @@ fn install_dependencies(missing: &[&str], pkg_manager: &str) -> Result<(), Strin
         format!("sudo pacman -S --noconfirm {}", missing.join(" "))
     } else if pkg_manager.contains("apk") {
         format!("sudo apk add {}", missing.join(" "))
+    } else if pkg_manager.contains("zypper") {
+        format!("sudo zypper --non-interactive install {}", missing.join(" "))
+    } else if pkg_manager.contains("xbps-install") {
+        format!("sudo xbps-install -Sy {}", missing.join(" "))
+    } else if pkg_manager.contains("emerge") {
+        format!("sudo emerge {}", missing.join(" "))
+    } else if pkg_manager.contains("eopkg") {
+        format!("sudo eopkg install -y {}", missing.join(" "))
+    } else if pkg_manager.contains("nix-env") {
+        format!("nix-env -iA {}", missing.join(" "))
     } else {
         return Err("No supported package manager found".to_string());
     };
@@ -162,6 +192,21 @@ fn check_network_connectivity() -> Result<(), String> {
             Ok(())
         }
     }
+}
+
+fn command_exists(bin: &str) -> bool {
+    if bin.contains('/') {
+        return Path::new(bin).is_file();
+    }
+
+    let path_var = match env::var_os("PATH") {
+        Some(p) => p,
+        None => return false,
+    };
+
+    env::split_paths(&path_var)
+        .map(|dir| dir.join(bin))
+        .any(|candidate| candidate.is_file())
 }
 
 fn check_disk_space() -> Result<(), String> {
