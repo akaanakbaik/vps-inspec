@@ -1,0 +1,51 @@
+[package]
+name = "vps-inspec"
+version = "1.0.0"
+edition = "2021"
+authors = ["akaanakbaik"]
+repository = "https://github.com/akaanakbaik/vps-inspec"
+description = "Professional VPS Inspector with AI-powered diagnostics"
+license = "MIT"
+
+[dependencies]
+# CLI & Interactive
+clap = { version = "4.4", features = ["derive"] }
+dialoguer = "0.11"        # Interactive prompts
+indicatif = "0.17"        # Progress bars
+colored = "2.0"           # Terminal colors
+
+# System info
+sysinfo = "0.30"
+whoami = "1.4"
+uptime_lib = "0.2"
+num_cpus = "1.16"
+
+# Data handling
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+regex = "1.10"
+chrono = { version = "0.4", features = ["serde"] }
+
+# Async & HTTP (untuk AI)
+tokio = { version = "1.35", features = ["full"] }
+reqwest = { version = "0.11", features = ["json", "stream"] }
+async-trait = "0.1"
+
+# Report generation
+docx-rs = "0.5"
+printpdf = "0.6"
+image = "0.24"            # Untuk gambar di PDF
+plotters = "0.3"          # Untuk grafik di PDF
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# AI Client
+openai-api = "0.6"        # OpenAI compatible
+backoff = { version = "0.4", features = ["tokio"] }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
